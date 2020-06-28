@@ -1,0 +1,305 @@
+<html> <head> <title>Project S-Curve </title> 
+<meta http-equiv=”Pragma” content=”no-cache”>
+<meta http-equiv=”Expires” content=”-1″>
+<meta http-equiv=”CACHE-CONTROL” content=”NO-CACHE”>
+
+	<script src="./codebase/dhtmlxgantt.js" type="text/javascript" charset="utf-8"></script>
+	<link rel="stylesheet" href="./codebase/dhtmlxgantt.css" type="text/css" media="screen" title="no title" charset="utf-8">
+
+    <script language="javascript" type="text/javascript" src="./codebase/js/flot/jquery.js"></script>
+    <script language="javascript" type="text/javascript" src="./codebase/js/flot/jquery.flot.js"></script>
+
+	<script type="text/javascript" src="./codebase/js/jscharts.js"></script>
+
+	<style type="text/css">
+		
+		.cbut {border-radius: 15px;}
+
+	</style>
+</head>
+<body>
+<div id="gantt_here" style='width:100%; height:100%; display:none'></div>
+
+<script>
+ 
+// GET Method Dashboard.htm?pXML=name.xml&pjname=proj_name&pdate=yyyy-mm-dd
+	var pXML= queryString("pXML");
+	var pjname = queryString("pjname");
+	var pdate =  queryString("pdate");
+
+document.write('<H1>' + pjname +' Project S-Curve <a href = "Dashboard.htm?pXML='+ pXML + '&pjname=' +pjname +'&pdate=' +pdate +'"><img src="Dashboard.png" width="20" height ="20"></a> <a href = "Gantt.htm?pXML='+ pXML + '&pjname=' +pjname +'&pdate=' +pdate +'"> <img src="Gantt.jpg" width="20" height ="20"></a> <a href = "Timeline.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"> <img src="timeline.jpg" width="20" height ="20"></a> <a href = "Calendar.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"> <img src="calendar.jpg" width="20" height ="20"></a></H1>');
+
+	var today=new Date();
+	var getpDate =new Date(pdate);
+	if (!(isNaN(getpDate))) {var today=new Date(pdate); } 
+	document.write(" Report Date :" + today +"<br>");
+	
+	function PageQuery(q) {
+
+     	if(q.length > 1)
+        	   this.q = q.substring(1, q.length);
+     	else
+	           this.q = null;
+
+	     this.keyValuePairs = new Array();
+
+     	if(q) {
+           	for(var i=0; i < this.q.split("&").length; i++) {
+           	this.keyValuePairs[i] = this.q.split("&")[i];
+        	   }
+	     }
+
+     	this.getKeyValuePairs = function() {
+        	   return this.keyValuePairs;
+	     }
+
+     	this.getValue = function(s) {
+           	for(var j=0; j < this.keyValuePairs.length; j++) {
+                 	if(this.keyValuePairs[j].split("=")[0] == s)
+                	       return this.keyValuePairs[j].split("=")[1];
+           	}
+        	   return false;
+	     }
+
+     	this.getParameters = function() {
+           	var a = new Array(this.getLength());
+           	for(var j=0; j < this.keyValuePairs.length; j++) {
+                	 a[j] = this.keyValuePairs[j].split("=")[0];
+        	   }
+	           return a;
+	     }
+
+	     this.getLength = function() {
+        	   return this.keyValuePairs.length;
+     		}  
+	}
+
+	//Query String Function
+	function queryString(key){
+     	var page = new PageQuery(window.location.search);
+     	return unescape(page.getValue(key));
+	}
+// end get method
+
+</script>
+<table><tr><td>
+<div id="chartid" style="width:600px;height:300px">Loading....</div>
+</td><td>
+<div id="chartid2">Loading....</div>
+</td><td>
+</td></tr></table>
+
+<script>
+
+
+	// Initial Data
+	var gData = [];
+	var datacount = 0,hcount=0;
+
+		// SMonthStart Jan = 1
+	var SMonthStart = 1; SYearStart = 2000; SMonthNum = 300; Sdate = new Date(); Sarray =new Array(SMonthNum);
+	var thismonth = 12*(today.getFullYear() - SYearStart) + (today.getMonth() +1 - SMonthStart);
+	for (isc=0; isc<SMonthNum; isc++){
+		Sdate.setFullYear(SYearStart ,SMonthStart -1 ,1);
+		Sarray[isc] = new Array (2);
+		Sarray[isc][0] = Sdate.toString();
+		Sarray[isc][1] = 0;
+		if ( SMonthStart  > 11) { SMonthStart = 1; SYearStart = SYearStart +1;}
+			else {SMonthStart = SMonthStart + 1; }
+		}
+		
+	// Call MS Project XML
+	var gtData = [];
+	var gtMap;
+	var datacount = 0;
+	var Aheadweek = 4;
+	var Risk2Comp = 20;
+	var Dsum = 0, Bsum = 0, ProjAccum = 0,NTask = 0, NRisk = 0, NBehind = 0, NLate = 0, NOnprogress =0, NUpcoming =0, NComplete =0;
+	
+
+
+	
+	gantt.config.xml_date = "%Y-%m-%d %H:%i";
+	gantt.init("gantt_here");
+	gantt.attachEvent("onLoadEnd", function(){
+
+	projData();
+	//alert(gData);
+	
+	// plot flot
+
+
+	$(function () {
+
+	   var d1= [];
+	   var BAccum = 0, SAccum = 0;
+	   for (isc=0; isc<SMonthNum; isc++){
+	   SAccum = SAccum + Sarray[isc][1];
+	   }
+	   for (isc=0; isc<SMonthNum; isc++){
+		BAccum = BAccum + (Sarray[isc][1]/SAccum*100);
+		d1.push([ Date.parse(Sarray[isc][0]), BAccum ]);
+		}
+
+	   var DDsum = Dsum/ProjAccum;
+	   var DBsum = Bsum/ProjAccum;
+
+
+		var d2 = [[ today, DDsum]];
+	   
+
+
+	 
+		$.plot($("#chartid"), [
+			{
+				data: d1,
+				label: "Base line",
+				lines: { show: true, fill: true }
+			},
+			{
+				data: d2,
+				label: "Actual",
+				points: { show: true, fill: true, radius: 3 }
+			} ],
+			{
+				xaxis: { mode: "time" } 
+			 }
+
+
+		);
+
+	});
+
+
+	// charting02
+
+		var NFuture = NTask - NRisk - NLate - NBehind - NOnprogress - NUpcoming - NComplete;
+		var myData2 = new Array(['Risk', NRisk], ['Late', NLate],['Behind', NBehind], ['On Progress', NOnprogress],['Completed',NComplete],['Up Coming', NUpcoming], ['Futures Tasks', NFuture]);
+		var colors2 = ['#BA0000', '#FFFF00','#0000FF', '#99FF99','#D9FFF7', '#00EE00' ,'#D9EDF7'];
+		var myChart2= new JSChart('chartid2', 'pie');
+		myChart2.setDataArray(myData2);
+		myChart2.colorizePie(colors2);
+		myChart2.setPieRadius(100);
+		myChart2.setPieValuesColor('#603311');
+		myChart2.setTitle(pjname +' Task Summary');
+		myChart2.draw();
+
+
+
+
+
+
+	// end charting
+
+
+	// Finish	
+	
+	});
+	gantt.load("./data/"+ pXML+"?v="+Math.random(), "xml");
+	
+	function projData(){
+	//declare variable
+	
+	gantt.eachTask(function(task){
+
+
+	// Date format
+
+			var mstart = task.start_date;
+			var fmstart = mstart.getDate() + "/" + (mstart.getMonth()+1) + "/" + mstart.getFullYear();
+			var mfinish = task.end_date;
+			var fmfinish = mfinish.getDate() + "/" + (mfinish.getMonth()+1) + "/" + mfinish.getFullYear();
+			
+//	Assign status
+
+		if(task.parent == 0) { HeadText = task.text; }
+
+		IsHeadTask = 1;
+		AssStat = "";
+		AssColor = "";
+		BaseComp = 0;	
+		
+	//	Select first level
+		if(task.parent == 0) {
+
+		//do with head project
+		
+		hcount=hcount+1;
+		}
+   
+	
+
+		if(!((task.parent) == 0) ) 
+		{ 
+			IsHeadTask = 0;
+			NTask = NTask + 1;
+			
+				// 	S-Curve by number of days
+				for (isc=0; isc<SMonthNum; isc++){
+				if (Date.parse(task.end_date) == Date.parse(Sarray[isc][0])) {
+					Sarray[isc][1] = Sarray[isc][1]+ 1;
+					}
+					else{
+						Sarray[isc][1] = Sarray[isc][1] + Math.min(30.5,Math.max(0,(Date.parse(task.end_date) - Date.parse(Sarray[isc][0]))/86400000)) - Math.min(30.5,Math.max(0,(Date.parse(task.start_date) -Date.parse(Sarray[isc][0]))/86400000)) ;
+
+						}
+				}	
+
+			if ((Date.parse(today) < Date.parse(task.start_date)) && ((Date.parse(task.start_date)-Date.parse(today)) < Aheadweek*7*24*60*60*1000))
+			{
+				AssStat = "Upcoming";
+				AssColor = "33FF00";
+				NUpcoming = NUpcoming + 1;
+				BaseComp = 0;
+			}
+
+			if ((Date.parse(today) > Date.parse(task.start_date)) && (Date.parse(today) < Date.parse(task.end_date)))
+			{
+				AssStat = "Onprogress";
+				AssColor = "FF99CC";
+				BaseComp = (Date.parse(today) - Date.parse(task.start_date))/(Date.parse(task.end_date)-Date.parse(task.start_date))*100;
+				if ( task.progress * 100 < BaseComp ){ AssStat = "Behind"; AssColor = "3366CC";}
+				if ( task.progress * 100 < 1 ){ AssStat = "Late"; AssColor = "FFFF00"; NLate = NLate + 1; }
+				if (AssStat == "Behind") {NBehind = NBehind +1;}	
+				if (AssStat == "Onprogress") { NOnprogress = NOnprogress + 1;}
+
+			}
+
+			if (Date.parse(today) >= Date.parse(task.end_date))
+			{
+				AssStat = "Completed";
+				AssColor = "00CC66";
+				BaseComp = 100;
+				if ( task.progress * 100  < 100 ){ AssStat = "Behind"; AssColor = "3366CC"; }
+				if ( task.progress * 100  < Risk2Comp ){ AssStat = "Risk"; AssColor = "FF0000"; NRisk = NRisk + 1;   }
+				if (AssStat == "Behind") {NBehind = NBehind +1;}								
+				if (AssStat == "Completed") {NComplete = NComplete + 1;}		
+
+			}
+
+
+				ProjAccum = ProjAccum + (Date.parse(task.end_date)-Date.parse(task.start_date))/86400000;
+
+				Dsum = Dsum + (Date.parse(task.end_date)-Date.parse(task.start_date))/86400000 *  parseInt(task.progress*100);
+				if (Date.parse(task.end_date)-Date.parse(task.start_date)!==0 && Date.parse(today)-Date.parse(task.start_date)>0 ){
+					if(Date.parse(today)-Date.parse(task.start_date) >0) {
+					Bsum = Bsum +100*(Date.parse(task.end_date)-Date.parse(task.start_date))/86400000;
+					}
+					else {
+					Bsum = Bsum + 100*(Date.parse(today)-Date.parse(task.start_date))/86400000;
+					}
+				}
+
+
+
+		}
+
+
+			datacount = datacount + 1;
+	});	
+
+	}
+		</script>
+
+</body>
+</html>

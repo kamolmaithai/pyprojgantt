@@ -1,0 +1,176 @@
+<html> <head> <title>Project Iframe</title> 
+
+	<script src="./codebase/dhtmlxgantt.js" type="text/javascript" charset="utf-8"></script>
+	<link rel="stylesheet" href="./codebase/dhtmlxgantt.css" type="text/css" media="screen" title="no title" charset="utf-8">
+
+
+	<style type="text/css">
+		
+		.cbut {border-radius: 15px;}
+
+	</style>
+</head>
+<body>
+<div id="gantt_here" style='width:100%; height:100%; display:none'></div>
+
+<script>
+ 
+// GET Method Dashboard.htm?pXML=name.xml&pjname=proj_name&pdate=mm-dd-yyyy
+	var pXML= queryString("pXML");
+	var pjname = queryString("pjname");
+	var pdate =  queryString("pdate");
+
+document.write('<H3>Project Dashboard </H3><a href = "Dashboard.htm?pXML='+ pXML + '&pjname=' +pjname +'&pdate=' +pdate +'" target="_blank"><img src="Dashboard.png" width="20" height ="20"></a> <a href = "Gantt.htm?pXML='+ pXML + '&pjname=' +pjname +'&pdate=' +pdate +'"target="_blank"><img src="Gantt.jpg" width="20" height ="20"></a> <a href = "sCurve.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"target="_blank"> <img src="sCurve.gif" width="20" height ="20"></a> <a href = "Timeline.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"target="_blank"> <img src="timeline.jpg" width="20" height ="20"></a> <a href = "Calendar.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"target="_blank"> <img src="calendar.jpg" width="20" height ="20"></a>');
+
+	function formatDate(date) {
+	  var monthNames = [
+		"January", "February", "March",
+		"April", "May", "June", "July",
+		"August", "September", "October",
+		"November", "December"
+	  ];
+
+	  var day = date.getDate();
+	  var monthIndex = date.getMonth();
+	  var year = date.getFullYear();
+
+	  return day + ' ' + monthNames[monthIndex] + ' ' + year;
+	}
+	var today=new Date();
+	var getpDate =new Date(pdate);
+	if (!(isNaN(getpDate))) {var today=new Date(pdate); } 
+	document.write("<br>Date :" + formatDate(today) +"<br>");
+	
+	function PageQuery(q) {
+
+     	if(q.length > 1)
+        	   this.q = q.substring(1, q.length);
+     	else
+	           this.q = null;
+
+	     this.keyValuePairs = new Array();
+
+     	if(q) {
+           	for(var i=0; i < this.q.split("&").length; i++) {
+           	this.keyValuePairs[i] = this.q.split("&")[i];
+        	   }
+	     }
+
+     	this.getKeyValuePairs = function() {
+        	   return this.keyValuePairs;
+	     }
+
+     	this.getValue = function(s) {
+           	for(var j=0; j < this.keyValuePairs.length; j++) {
+                 	if(this.keyValuePairs[j].split("=")[0] == s)
+                	       return this.keyValuePairs[j].split("=")[1];
+           	}
+        	   return false;
+	     }
+
+     	this.getParameters = function() {
+           	var a = new Array(this.getLength());
+           	for(var j=0; j < this.keyValuePairs.length; j++) {
+                	 a[j] = this.keyValuePairs[j].split("=")[0];
+        	   }
+	           return a;
+	     }
+
+	     this.getLength = function() {
+        	   return this.keyValuePairs.length;
+     		}  
+	}
+
+	//Query String Function
+	function queryString(key){
+     	var page = new PageQuery(window.location.search);
+     	return unescape(page.getValue(key));
+	}
+// end get method
+
+</script>
+<p><b>Title   :<span id="Title"></span></b><br />
+<b>Complete:</b> <span id="PercentComplete"></span><br />
+<b>Baseline_:</b> <span id="PercentBaseline"></span><br />
+<!-- <b>StartDate:</b> <span id="StartDate"></span><br />
+<b>FinishDate:</b> <span id="FinishDate"></span><br />
+<b>ReportDate:</b> <span id="ReportDate"></span> -->
+</p>
+
+<script>
+
+
+	// Initial Data
+	var gData = [];
+	var datacount = 0,NTask = 0,hcount=0;
+	var startDate = "9999-12-31", finishDate = "1970-01-01", Baseline = 0, PComplete = 0, TComplete = 0, Tduration = 0;
+
+	
+	gantt.config.xml_date = "%Y-%m-%d %H:%i";
+	gantt.init("gantt_here");
+	gantt.attachEvent("onLoadEnd", function(){
+
+	projData();
+
+
+	// format to mm-dd-yyyy
+	repDate = today;
+
+	PComplete = 100*TComplete/Tduration
+	Baseline = 100*(Date.parse(repDate) - Date.parse(startDate))/(Date.parse(finishDate) - Date.parse(startDate));
+	PComplete =Math.round(PComplete*100)/100;
+	Baseline =Math.min(Math.round(Baseline*100)/100,100);
+
+	document.getElementById("Title").innerHTML=pjname;
+	document.getElementById("PercentComplete").innerHTML="<img src='buleline.gif' width='"+ PComplete+ "' height='12'>"+PComplete+" %";
+	document.getElementById("PercentBaseline").innerHTML="<img src='pinkline.gif' width='"+ Baseline+ "' height='12'>"+Baseline+" %";
+	//document.getElementById("StartDate").innerHTML=startDate.getFullYear() +"-"+ startDate.getMonth()+"-"+ startDate.getDay();
+	//document.getElementById("FinishDate").innerHTML=finishDate.getFullYear() +"-"+ finishDate.getMonth()+"-"+ finishDate.getDay();
+	//document.getElementById("ReportDate").innerHTML=repDate.getFullYear() +"-"+ repDate.getMonth()+"-"+ repDate.getDay();
+
+
+	// Finish	
+	
+	});
+	gantt.load("./data/"+ pXML+"?v="+Math.random(), "xml");
+	
+	function projData(){
+	//declare variable
+	
+	gantt.eachTask(function(task){
+
+
+	
+	//	Select first level
+		if(task.parent == 0) {
+
+		//do with head project
+
+		
+		hcount=hcount+1;
+		}
+   
+	
+
+		if(!((task.parent) == 0) ) 
+		{
+		//do with non head project
+		if 	(Date.parse(startDate) > Date.parse(task.start_date)) { startDate = task.start_date; }
+		if 	(Date.parse(finishDate) < Date.parse(task.end_date)) { finishDate = task.end_date; }
+		TComplete = TComplete+ (task.duration * task.progress);
+		Tduration = Tduration+ task.duration;
+		//alert("dur:=" + task.duration +", prog:=" + task.progress + ",calc=" +(task.duration + 0)* (task.progress + 0) + " TC=" + TComplete + " TD=" + Tduration );
+			
+			NTask = NTask + 1;
+
+		}
+
+
+			datacount = datacount + 1;
+	});	
+
+	}
+		</script>
+
+</body>
+</html>

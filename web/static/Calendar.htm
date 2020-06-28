@@ -1,0 +1,264 @@
+<html> <head> <title>Project Calendar </title> 
+<meta http-equiv=”Pragma” content=”no-cache”>
+<meta http-equiv=”Expires” content=”-1″>
+<meta http-equiv=”CACHE-CONTROL” content=”NO-CACHE”>
+
+	<script src="./codebase/dhtmlxgantt.js" type="text/javascript" charset="utf-8"></script>
+	<link rel="stylesheet" href="./codebase/dhtmlxgantt.css" type="text/css" media="screen" title="no title" charset="utf-8">
+
+	<link rel='stylesheet' type='text/css' href='./codebase/js/fCal/fullcalendar.css' />
+	<script type='text/javascript' src='./codebase/js/fCal/jquery/jquery.js'></script>
+	<script type='text/javascript' src='./codebase/js/fCal/jquery/ui.core.js'></script>
+	<script type='text/javascript' src='./codebase/js/fCal/jquery/ui.draggable.js'></script>
+	<script type='text/javascript' src='./codebase/js/fCal/fullcalendar.js'></script>
+
+	<style type="text/css">
+		
+		.cbut {border-radius: 15px;}
+
+	</style>
+</head>
+<body>
+<div id="gantt_here" style='width:100%; height:100%; display:none'></div>
+
+<script>
+ 
+// GET Method Dashboard.htm?pXML=name.xml&pjname=proj_name&pdate=yyyy-mm-dd
+	var pXML= queryString("pXML");
+	var pjname = queryString("pjname");
+	var pdate =  queryString("pdate");
+
+document.write('<H1>' + pjname +' Project Calendar <a href = "Dashboard.htm?pXML='+ pXML + '&pjname=' +pjname +'&pdate=' +pdate +'"><img src="Dashboard.png" width="20" height ="20"></a> <a href = "Gantt.htm?pXML='+ pXML + '&pjname=' +pjname +'&pdate=' +pdate +'"> <img src="Gantt.jpg" width="20" height ="20"></a> <a href = "sCurve.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"> <img src="sCurve.gif" width="20" height ="20"></a> <a href = "Timeline.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"> <img src="timeline.jpg" width="20" height ="20"></a> </H1>');
+
+	var today=new Date();
+	var getpDate =new Date(pdate);
+	if (!(isNaN(getpDate))) {var today=new Date(pdate); } 
+	document.write(" Report Date :" + today +"<br>");
+	
+	function PageQuery(q) {
+
+     	if(q.length > 1)
+        	   this.q = q.substring(1, q.length);
+     	else
+	           this.q = null;
+
+	     this.keyValuePairs = new Array();
+
+     	if(q) {
+           	for(var i=0; i < this.q.split("&").length; i++) {
+           	this.keyValuePairs[i] = this.q.split("&")[i];
+        	   }
+	     }
+
+     	this.getKeyValuePairs = function() {
+        	   return this.keyValuePairs;
+	     }
+
+     	this.getValue = function(s) {
+           	for(var j=0; j < this.keyValuePairs.length; j++) {
+                 	if(this.keyValuePairs[j].split("=")[0] == s)
+                	       return this.keyValuePairs[j].split("=")[1];
+           	}
+        	   return false;
+	     }
+
+     	this.getParameters = function() {
+           	var a = new Array(this.getLength());
+           	for(var j=0; j < this.keyValuePairs.length; j++) {
+                	 a[j] = this.keyValuePairs[j].split("=")[0];
+        	   }
+	           return a;
+	     }
+
+	     this.getLength = function() {
+        	   return this.keyValuePairs.length;
+     		}  
+	}
+
+	//Query String Function
+	function queryString(key){
+     	var page = new PageQuery(window.location.search);
+     	return unescape(page.getValue(key));
+	}
+// end get method
+
+</script>
+<INPUT TYPE="radio" NAME="Mview" VALUE="V" CHECKED onClick="scr_for_view(true)"> <img src="eye.gif" width="20" height ="20">
+<INPUT TYPE="radio" NAME="Mview" VALUE="P" onClick="scr_for_view(false)"><img src="print_preview.gif" width="20" height ="20">
+&nbsp; Complete :<span style="background-color: #00CC66"> &nbsp; &nbsp; &nbsp; </span>
+&nbsp; On Progress :<span style="background-color: #FF99CC"> &nbsp; &nbsp; &nbsp; </span>
+&nbsp; Behide :<span style="background-color: #3366CC"> &nbsp; &nbsp; &nbsp; </span>
+&nbsp; Late :<span style="background-color: #FFFF00"> &nbsp; &nbsp; &nbsp; </span>
+&nbsp; Up Coming :<span style="background-color: #33FF00"> &nbsp; &nbsp; &nbsp; </span>
+&nbsp; Delay (Risk) :<span style="background-color: #FF0000"> &nbsp; &nbsp; &nbsp; </span>
+&nbsp; Task Start :<img src="play.gif" width="10" height ="10">
+&nbsp; Task Finish :<img src="stop.gif" width="10" height ="10">
+&nbsp; Milestone :<img src="star.gif" width="10" height ="10">
+</h3> 
+<div id="calendar" style="width:1000px; height: 400px; position:relative; overflow-x:scroll; overflow-y:scroll;"></div>
+
+
+<script>
+
+
+	// Initial Data
+	var gData = [];
+	var datacount = 0,hcount=0;
+	//detect screen
+	function scr_for_view(setting) {
+	if (setting) {
+	var scr_height = screen.height;
+	var TimDiv = document.getElementById('calendar');
+	TimDiv.style.height = (scr_height - 150) + "px";
+	}
+	else {
+	var scr_height = screen.height;
+	var TimDiv = document.getElementById('calendar');
+	TimDiv.style.height = "100%";
+	}
+	}
+	scr_for_view(true);
+
+	// Call MS Project XML
+	var gtData = [];
+	var gtMap;
+	var datacount = 0;
+	var Aheadweek = 4;
+	var Risk2Comp = 20;
+	var Dsum = 0, Bsum = 0, ProjAccum = 0,NTask = 0, NRisk = 0, NBehind = 0, NLate = 0, NOnprogress =0, NUpcoming =0, NComplete =0;
+	var clData = [];
+
+	
+	gantt.config.xml_date = "%Y-%m-%d %H:%i";
+	gantt.init("gantt_here");
+	gantt.attachEvent("onLoadEnd", function(){
+
+	projData();
+	//alert(gData);
+	
+	// plot calendar
+	var d = new Date();
+	var y = d.getFullYear();
+	var m = d.getMonth();
+
+	$('#calendar').fullCalendar({
+		draggable: false,
+		showTime: false,
+		events: clData
+	});
+
+
+	// Finish	
+	
+	});
+	gantt.load("./data/"+ pXML+"?v="+Math.random(), "xml");
+	
+	function projData(){
+	//declare variable
+	
+	gantt.eachTask(function(task){
+
+
+	// Date format
+
+			var mstart = task.start_date;
+			var fmstart = mstart.getDate() + "/" + (mstart.getMonth()+1) + "/" + mstart.getFullYear();
+			var mfinish = task.end_date;
+			var fmfinish = mfinish.getDate() + "/" + (mfinish.getMonth()+1) + "/" + mfinish.getFullYear();
+			
+//	Assign status
+
+		if(task.parent == 0) { HeadText = task.text; }
+
+		IsHeadTask = 1;
+		AssStat = "";
+		AssColor = "";
+		BaseComp = 0;	
+		
+	//	Select first level
+		if(task.parent == 0) {
+
+		//do with head project
+		
+		hcount=hcount+1;
+		}
+   
+	
+
+		if(!((task.parent) == 0) ) 
+		{ 
+			IsHeadTask = 0;
+			NTask = NTask + 1;
+			
+
+
+			if ((Date.parse(today) < Date.parse(task.start_date)) && ((Date.parse(task.start_date)-Date.parse(today)) < Aheadweek*7*24*60*60*1000))
+			{
+				AssStat = "Upcoming";
+				AssColor = "33FF00";
+				NUpcoming = NUpcoming + 1;
+				BaseComp = 0;
+			}
+
+			if ((Date.parse(today) > Date.parse(task.start_date)) && (Date.parse(today) < Date.parse(task.end_date)))
+			{
+				AssStat = "Onprogress";
+				AssColor = "FF99CC";
+				BaseComp = (Date.parse(today) - Date.parse(task.start_date))/(Date.parse(task.end_date)-Date.parse(task.start_date))*100;
+				if ( task.progress * 100 < BaseComp ){ AssStat = "Behind"; AssColor = "3366CC";}
+				if ( task.progress * 100 < 1 ){ AssStat = "Late"; AssColor = "FFFF00"; NLate = NLate + 1; }
+				if (AssStat == "Behind") {NBehind = NBehind +1;}	
+				if (AssStat == "Onprogress") { NOnprogress = NOnprogress + 1;}
+
+			}
+
+			if (Date.parse(today) >= Date.parse(task.end_date))
+			{
+				AssStat = "Completed";
+				AssColor = "00CC66";
+				BaseComp = 100;
+				if ( task.progress * 100  < 100 ){ AssStat = "Behind"; AssColor = "3366CC"; }
+				if ( task.progress * 100  < Risk2Comp ){ AssStat = "Risk"; AssColor = "FF0000"; NRisk = NRisk + 1;   }
+				if (AssStat == "Behind") {NBehind = NBehind +1;}								
+				if (AssStat == "Completed") {NComplete = NComplete + 1;}		
+
+			}
+
+
+				ProjAccum = ProjAccum + (Date.parse(task.end_date)-Date.parse(task.start_date))/86400000;
+
+				Dsum = Dsum + (Date.parse(task.end_date)-Date.parse(task.start_date))/86400000 *  parseInt(task.progress*100);
+				if (Date.parse(task.end_date)-Date.parse(task.start_date)!==0 && Date.parse(today)-Date.parse(task.start_date)>0 ){
+					if(Date.parse(today)-Date.parse(task.start_date) >0) {
+					Bsum = Bsum +100*(Date.parse(task.end_date)-Date.parse(task.start_date))/86400000;
+					}
+					else {
+					Bsum = Bsum + 100*(Date.parse(today)-Date.parse(task.start_date))/86400000;
+					}
+				}
+
+//			Assign calendar
+//			var shortn = "<ACRONYM TITLE='" + fmstart + "-" + task.text + "'>"+task.text.slice(0,1)+"</ACRONYM>";
+			if(Date.parse(task.end_date) == Date.parse(task.start_date)){
+			var shortn =  "<span  style='background-color: #" +AssColor+ "'>"+HeadText + "-" + task.text + " <img src='star.gif' width='10' height ='10'></span >";
+			clData.push({ id: task.id, title: shortn , start: task.start_date, end: task.start_date });
+			}
+			else {
+			var shortn = "<span style='background-color: #" +AssColor+ "'>"+HeadText + "-" + task.text + " <img src='play.gif' width='8' height ='8'></span >";
+			clData.push({ id: task.id, title: shortn , start: task.start_date, end: task.start_date});
+			var shortn =  "<span  style='background-color: #" +AssColor+ "'>"+ HeadText + "-" + task.text + " <img src='stop.gif' width='8' height ='8'></span >";
+			clData.push({ id: task.id, title: shortn , start: task.end_date, end: task.end_date});
+			}
+
+
+		}
+
+
+			datacount = datacount + 1;
+	});	
+
+	}
+		</script>
+
+</body>
+</html>

@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<meta http-equiv=”Pragma” content=”no-cache”>
+<meta http-equiv=”Expires” content=”-1″>
+<meta http-equiv=”CACHE-CONTROL” content=”NO-CACHE”>
+	<title>Add/Import Project file</title>
+
+
+</head>
+<script src='./common/dhtmlxSuite/dhtmlx.js'></script>
+<script src="./codebase/dhtmlxgantt.js" type="text/javascript" charset="utf-8"></script>
+<link rel='stylesheet' type='text/css' href='./common/dhtmlxSuite/skins/terrace/dhtmlx.css'/>
+<script src="./common/api.js"></script>
+
+
+<script src="./common/dhx_file_dnd.js" type="text/javascript" charset="utf-8"></script>
+<link rel="stylesheet" href="./common/dhx_file_dnd.css" type="text/css" media="screen" title="no title" charset="utf-8">
+
+
+<link rel="stylesheet" href="./codebase/dhtmlxgantt.css" type="text/css" media="screen" title="no title" charset="utf-8">
+
+<style type="text/css">
+	html, body {
+		height: 100%;
+		padding: 0;
+		margin: 0;
+		overflow: hidden;
+		font-family: Arial;
+	}
+
+	.mpp-sample{
+		background: url("common/ms-project.png");
+		width: 32px;
+		height: 32px;
+		background-repeat: no-repeat;
+		padding-left: 40px;
+		line-height: 32px;
+		display: inline-block;
+	}
+</style>
+<body>
+
+
+<div style="text-align: center; padding: 5px;">
+		You can use any MPP(v2012) or XML Project file by upload or drag to project area.
+		<form id="mspImport" action="" method="POST" enctype="multipart/form-data">
+			<input type="file" id="mspFile" name="file"/>
+			<input value="SAVE" type="button" onclick='save();' style='margin:20px; display: inline;'>
+			<p id="fname" style=' display: inline;'>NEW FILE</p>
+		</form>
+		
+		<input value="Export to MS Project" type="button" onclick='gantt.exportToMSProject()' style='margin:20px;'>
+		<input value="Export to Excel" type="button" onclick='gantt.exportToExcel()' style='margin:20px;'>
+		<input value="Export to iCal" type="button" onclick='gantt.exportToICal()' style='margin:20px;'>
+		<input value="Export to JSON data" type="button" onclick='getjson();' style='margin:20px;'>
+		<input value="Export to XML data" type="button" onclick='getxml();' style='margin:20px;'>
+		<textarea id="code"></textarea><br>
+		<input type="radio" id="scale1" name="scale" value="1"  /><label for="scale1">Day scale</label>
+		<input type="radio" id="scale2" name="scale" value="2" /><label for="scale2">Week scale</label>
+		<input type="radio" id="scale3" name="scale" value="3" /><label for="scale3">Month scale</label>
+		<input type="radio" id="scale4" name="scale" value="4" checked /><label for="scale4">Year scale</label>
+	
+</div>
+<div id="gantt_here" style='width:100%; height:600px;'></div>
+
+
+<script type="text/javascript">
+
+// define block
+     gantt.form_blocks["my_editor"] = {
+	render:function(sns) {
+		return "<div class='dhx_cal_ltext' style='height:60px;'>Text&nbsp;<input type='text'><br/>Holders&nbsp;<input type='text'></div>";
+	},
+	set_value:function(node, value, task) {
+		var textarray = value.split('@')
+		node.childNodes[1].value = textarray[0] || "";
+		node.childNodes[4].value = textarray[1] || "";
+	},
+	get_value:function(node, task) {
+		if( node.childNodes[4].value) {
+		return node.childNodes[1].value +'@'+node.childNodes[4].value;
+		} else {
+		return node.childNodes[1].value;	
+		}
+		
+	},
+	focus:function(node) {
+		var a = node.childNodes[1];
+		a.select();
+		a.focus();
+	}
+     }; 
+	 
+	gantt.form_blocks["dhx_slider"] = {
+		render: function (sns) {
+			return '<div class="gantt_slider"><div><input type="text" readonly="true"/></div></div>';
+		},
+		set_value: function (node, value, task, data) {
+			if (!node._slider) {
+				node._slider = new dhtmlXSlider({
+					parent: node,
+					size: 270,
+					max: 100,
+					tooltip: true,
+					step: data.step ? data.step : 1,
+					skin: data.skin ? data.skin : ''
+				});
+
+				node._count = document.createElement('div');
+				node._count.className = "gantt_slider_value";
+
+				node.appendChild(node._count);
+				var slider_id = node._slider.attachEvent("onChange", function (newValue, sliderObj) {
+					node._count.innerHTML = newValue + "%";
+				});
+				var id = gantt.attachEvent("onAfterLightbox", function () {
+					node._slider.detachEvent(slider_id);
+					node._slider.unload();
+					node._slider = null;
+					this.detachEvent(id);
+				});
+			}
+			if (task.progress || task.progress == 0) {
+				node._slider.setValue(parseInt(task.progress * 100));
+				node._count.innerHTML = parseInt(task.progress * 100) + "%";
+			}
+		},
+		get_value: function (node, task) {
+			return node._slider ? node._slider.getValue() / 100 : 0;
+		},
+		focus: function (node) {
+		}
+	};
+	
+	gantt.config.columns = [
+    {name:"text", label:"Task name", tree:true, width:"*" },	
+	{name:"start_date", label:"Start" , width:80, align: "center" },
+	{name:"duration",   label:"Dur.",  width:40,  align: "center" },
+	{name: "progress", label:"Prog.", width:40,align: "center" },
+	{name:"add",        label:"",           width:44 }
+    ];
+	gantt.locale.labels.section_progress = "Progress";
+
+    gantt.config.lightbox.sections = [
+        {name: "description", height: 38, map_to: "text", type:"my_editor", focus: true},
+		{name: "progress", type: "dhx_slider", map_to: "progress", step: 5},
+        {name: "time", type: "duration", map_to: "auto"}
+    ];
+	
+	//selectable scale
+	function setScaleConfig(value){
+		switch (value) {
+			case "1":
+				gantt.config.scale_unit = "day";
+				gantt.config.step = 1;
+				gantt.config.date_scale = "%d %M";
+				gantt.config.subscales = [];
+				gantt.config.scale_height = 27;
+				gantt.templates.date_scale = null;
+				break;
+			case "2":
+				var weekScaleTemplate = function(date){
+					var dateToStr = gantt.date.date_to_str("%d %M");
+					var endDate = gantt.date.add(gantt.date.add(date, 1, "week"), -1, "day");
+					return dateToStr(date) + " - " + dateToStr(endDate);
+				};
+
+				gantt.config.scale_unit = "week";
+				gantt.config.step = 1;
+				gantt.templates.date_scale = weekScaleTemplate;
+				gantt.config.subscales = [
+					{unit:"day", step:1, date:"%D" }
+				];
+				gantt.config.min_column_width = 20;
+				gantt.config.scale_height = 50;
+				break;
+			case "3":
+				gantt.config.scale_unit = "month";
+				gantt.config.date_scale = "%F, %Y";
+				gantt.config.subscales = [
+					{unit:"day", step:1, date:"%j, %D" }
+				];
+				gantt.config.min_column_width = 20;
+				gantt.config.scale_height = 50;
+				gantt.templates.date_scale = null;
+				break;
+			case "4":
+				gantt.config.scale_unit = "year";
+				gantt.config.step = 1;
+				gantt.config.date_scale = "%Y";
+				gantt.config.min_column_width = 20;
+				gantt.config.scale_height = 50;
+				gantt.templates.date_scale = null;
+
+				
+				gantt.config.subscales = [
+					{unit:"month", step:1, date:"%M" }
+				];
+				break;
+		}
+	}
+
+	setScaleConfig('4');
+	
+	var func = function(e) {
+	e = e || window.event;
+	var el = e.target || e.srcElement;
+	var value = el.value;
+	setScaleConfig(value);
+	gantt.render();
+	};
+	var els = document.getElementsByName("scale");
+	for (var i = 0; i < els.length; i++) {
+		els[i].onclick = func;
+	}
+	
+	// file upload
+	function upload(file, callback){
+		gantt.importFromMSProject({
+			data: file,
+			callback: function(project){
+				if(project){
+					gantt.clearAll();
+
+					if(project.config.duration_unit){
+						gantt.config.duration_unit = project.config.duration_unit;
+					}
+
+					gantt.parse(project.data);
+				}
+
+				if(callback)
+					callback(project);
+			}
+		});
+	}
+	var pXML = "";
+
+
+	gantt.attachEvent("onParse", function(){
+		gantt.eachTask(function(task){
+			if(gantt.hasChild(task.id)){
+				task.type = gantt.config.types.project;
+				gantt.updateTask(task.id);
+			}else if(task.duration === 0){
+				task.type = gantt.config.types.milestone;
+				gantt.updateTask(task.id);
+			}
+		});
+
+	});
+
+	gantt.message("Upload <b>MPP</b> or <b>XML</b> Project file using 'Choose File' button or simply drag-and-drop it into the page");
+
+	if(!window.FormData){
+		gantt.error("Your browsers does not support Ajax File upload, please open this demo in modern browser");
+	}
+	gantt.config.autosize = "y";
+	gantt.config.xml_date="%Y-%m-%d %H:%i";
+	gantt.init("gantt_here");
+
+	var fileDnD = fileDragAndDrop();
+	fileDnD.init(gantt.$container);
+
+	function sendFile(file){
+		fileDnD.showUpload();
+		upload(file, function(){
+			fileDnD.hideOverlay();
+		})
+	}
+
+	fileDnD.onDrop(sendFile);
+	var form = document.getElementById("mspImport");
+	form.onsubmit = function(event) {
+		event.preventDefault();
+		var fileInput = document.getElementById("mspFile");
+		sendFile(fileInput.files[0]);
+	};
+		function getjson(){
+    document.getElementById("code").value = JSON.stringify( gantt.serialize() );    
+	}
+	function getxml(){
+    document.getElementById("code").value= gantt.serialize("xml");    
+	}
+		
+	function save(){
+	//var request = new XMLHttpRequest();	
+	//if (pXML == "") {pXML = prompt("Please enter file name", "newproject.xml");}
+	//request.open('POST', 'savexml.php?xmlname='+pXML, true);
+
+	//request.setRequestHeader('Content-Type', 'application/xml; charset=UTF-8');
+	//request.send(gantt.serialize("xml"));
+	//document.getElementById("fname").innerHTML = pXML;
+	
+	if (pXML == "") {pXML = prompt("Please enter file name", "newproject.xml");}
+	document.getElementById("fname").innerHTML = pXML;
+	var blob = new Blob([gantt.serialize("xml")], { type: 'text/plain' });
+	var savefile = new File([blob], pXML, {type: "text/plain"});
+	var formdata = new FormData();
+	formdata.append('file', savefile);
+    var xhr = new XMLHttpRequest();
+    var url = encodeURI('./upload');
+    xhr.open('POST', url);
+    xhr.send(formdata);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            alert("save successful");
+        }
+    }
+	}
+</script>
+
+</body>

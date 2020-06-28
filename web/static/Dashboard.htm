@@ -1,0 +1,668 @@
+<html> <head> <title>Project DashBoard </title> <!-- fix box model in firefox/safari/opera --> 
+<meta http-equiv=”Pragma” content=”no-cache”>
+<meta http-equiv=”Expires” content=”-1″>
+<meta http-equiv=”CACHE-CONTROL” content=”NO-CACHE”>
+<style type="text/css"> .aw-quirks * { box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; }
+
+		body {font: 12px Tahoma}
+	</style>
+
+	<style> body, html {margin:0px; padding: 0px; overflow: hidden;} </style>
+
+	<!-- ActiveWidgets stylesheet and scripts -->
+	<script src="./codebase/js/grid/lib/aw.js" type="text/javascript"></script>
+	<link href="./codebase/js/grid/styles/system/aw.css" rel="stylesheet"></link>
+	<script src="./codebase/dhtmlxgantt.js" type="text/javascript" charset="utf-8"></script>
+	<link rel="stylesheet" href="./codebase/dhtmlxgantt.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<script type="text/javascript" src="./codebase/js/jscharts.js"></script>
+
+
+	<!-- grid format -->
+	<style type="text/css">
+		#myGrid {height: 150px; width: 1024px;}
+		#myGrid .aw-row-selector {text-align: center}
+
+		#myGrid .aw-column-0 {width:  80px;}
+		#myGrid .aw-column-1 {width: 200px;}
+		#myGrid .aw-column-2 {text-align: right;}
+		#myGrid .aw-column-3 {text-align: right;}
+		#myGrid .aw-column-4 {text-align: right;}
+		#myGrid .aw-column-5 {text-align: right;}
+		#myGrid .aw-column-6 {text-align: right;}
+		#myGrid .aw-column-7 {text-align: right;}
+		#myGrid .aw-column-8 {text-align: right;}
+		#myGrid .aw-column-9 {text-align: right;}
+		#myGrid .aw-column-10 {text-align: right;}
+
+
+
+		#myGrid .aw-grid-row {border-bottom: 1px solid threedlightshadow;}
+		#myGrid .aw-grid-cell {border-right: 1px solid threedlightshadow;}
+
+		/* box model fix for strict doctypes, safari */
+		.aw-strict #myGrid .aw-grid-cell {padding-right: 3px;}
+		.aw-strict #myGrid .aw-grid-row {padding-bottom: 3px;}
+
+		/* set image
+		.aw-image-Upcoming      {background: url(Upcoming.jpg)}
+		.aw-image-Onprogress {background: url(Onprogress.gif)}
+		.aw-image-Behind    {background: url(Behind.png)}
+		.aw-image-Late  {background: url(Late.gif)}
+		.aw-image-Risk  {background: url(Risk.png)}
+		.aw-image-Issue  {background: url(Issue.gif)}
+		.aw-image-Milestone  {background: url(Milestone.png)}
+		
+		/*adjust the roundness*/
+		.cbut {border-radius: 15px;}
+
+	</style>
+</head>
+<body>
+<div id="gantt_here" style='width:100%; height:100%; display:none'></div>
+
+<script>
+ 
+// GET Method Dashboard.htm?pXML=name.xml&pjname=proj_name&pdate=yyyy-mm-dd
+	var pXML= queryString("pXML");
+	var pjname = queryString("pjname");
+	var pdate =  queryString("pdate");
+
+document.write('<H1>' + pjname +' Project Dashboard <a href = "Gantt.htm?pXML='+ pXML + '&pjname=' +pjname +'&pdate=' +pdate +'"> <img src="Gantt.jpg" width="20" height ="20"></a> <a href = "sCurve.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"> <img src="sCurve.gif" width="20" height ="20"></a> <a href = "Timeline.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"> <img src="timeline.jpg" width="20" height ="20"></a> <a href = "Calendar.htm?pXML='+ pXML + '&pjname=' +pjname+'&pdate=' +pdate +'"> <img src="calendar.jpg" width="20" height ="20"></a></H1>');
+
+	var today=new Date();
+	var getpDate =new Date(pdate);
+	if (!(isNaN(getpDate))) {var today=new Date(pdate); } 
+	document.write(" Report Date :" + today +"<br>");
+	
+	function PageQuery(q) {
+
+     	if(q.length > 1)
+        	   this.q = q.substring(1, q.length);
+     	else
+	           this.q = null;
+
+	     this.keyValuePairs = new Array();
+
+     	if(q) {
+           	for(var i=0; i < this.q.split("&").length; i++) {
+           	this.keyValuePairs[i] = this.q.split("&")[i];
+        	   }
+	     }
+
+     	this.getKeyValuePairs = function() {
+        	   return this.keyValuePairs;
+	     }
+
+     	this.getValue = function(s) {
+           	for(var j=0; j < this.keyValuePairs.length; j++) {
+                 	if(this.keyValuePairs[j].split("=")[0] == s)
+                	       return this.keyValuePairs[j].split("=")[1];
+           	}
+        	   return false;
+	     }
+
+     	this.getParameters = function() {
+           	var a = new Array(this.getLength());
+           	for(var j=0; j < this.keyValuePairs.length; j++) {
+                	 a[j] = this.keyValuePairs[j].split("=")[0];
+        	   }
+	           return a;
+	     }
+
+	     this.getLength = function() {
+        	   return this.keyValuePairs.length;
+     		}  
+	}
+
+	//Query String Function
+	function queryString(key){
+     	var page = new PageQuery(window.location.search);
+     	return unescape(page.getValue(key));
+	}
+// end get method
+
+</script>
+<table><tr><td>
+<div id="chartid">Loading....</div>
+</td><td>
+<div id="BoxText">Loading....</div>
+</td><td>
+<div id="chartid2">Loading....</div>
+</td></tr></table>
+<B><div id="view">View Mode</div></B>
+<span id='buttons' ></span>
+<INPUT TYPE="radio" NAME="Mview" VALUE="V" CHECKED onClick="scr_for_view(true)"> <img src="eye.gif" width="20" height ="20">
+<INPUT TYPE="radio" NAME="Mview" VALUE="P" onClick="scr_for_view(false)"><img src="print_preview.gif" width="20" height ="20">
+
+<script>
+
+
+
+	// Initial Data
+	var gData = [];
+	var datacount = 0;
+	var Aheadweek = 4;
+	var Risk2Comp = 20;
+	var Dsum = 0, Bsum = 0, ProjAccum = 0,NTask = 0, NRisk = 0, NBehind = 0, NLate = 0, NOnprogress =0, NUpcoming =0, NComplete =0;
+	var L1Data = new Array(), colors = new Array();
+	var L1BaseComp, L1BoxText=""; 
+	
+		//	create ActiveWidgets Grid javascript object
+	var obj = new AW.UI.Grid;
+		//	define column labels
+	var columns = ["ID", "Name", "Start", "End",  "Complete", "Parent", "Predecess", "Baseline","Status", "IsHeadTask", "Duration"];
+	
+
+	//	assign unique id for the grid element
+	obj.setId("myGrid");
+//	obj.setStyle('width', '100%'); 
+	obj.setStyle('height', '40%'); 
+
+	//	provide column labels
+
+	obj.setHeaderText(columns);
+
+
+
+	//	define data formats
+	var str = new AW.Formats.String;
+	var num = new AW.Formats.Number;
+	var date = new AW.Formats.Date;
+
+//	date.setDataFormat("ISO8601");
+	date.setTextFormat("mmm d, yyyy");
+
+
+	//	set data formats
+	obj.setCellFormat([num, str, date, date,  num,  str, num,  num, str, num, num]);
+
+	//	set number of columns, rows
+	obj.setColumnCount(11);
+
+	//filter
+  	 obj.setColumnIndices([0,1,2,3,4,5,6,8,9]); 
+	//	write grid html to the page	
+	document.write(obj);
+	
+	
+	gantt.config.xml_date = "%Y-%m-%d %H:%i";
+	gantt.init("gantt_here");
+	gantt.attachEvent("onLoadEnd", function(){
+
+	projData();
+	//alert(gData);
+
+
+// charting01
+
+	var myChart = new JSChart('chartid', 'bar');
+
+	myChart.setDataArray(L1Data);
+	myChart.colorizeBars(colors);
+	myChart.setAxisColor('#9D9F9D');
+	myChart.setAxisWidth(1);
+	myChart.setAxisNameX('Progress');
+	myChart.setAxisNameY('Percent');
+	myChart.setTitle( pjname +' Schedule Progress');
+	myChart.setSize(600,250);
+	myChart.draw();
+
+	// Boxtext
+	
+	var boxDiv = document.getElementById('BoxText');
+		boxDiv.innerHTML = L1BoxText;
+		
+// charting02
+
+	var NFuture = NTask - NRisk - NLate - NBehind - NOnprogress - NUpcoming - NComplete;
+	var myData2 = new Array(['Risk', NRisk], ['Late', NLate],['Behind', NBehind], ['On Progress', NOnprogress],['Completed',NComplete],['Up Coming', NUpcoming], ['Futures Tasks', NFuture]);
+	var colors2 = ['#BA0000', '#FFFF00','#0000FF', '#99FF99','#D9FFF7', '#00EE00' ,'#D9EDF7'];
+	var myChart2= new JSChart('chartid2', 'pie');
+	myChart2.setDataArray(myData2);
+	myChart2.colorizePie(colors2);
+	myChart2.setPieRadius(100);
+	myChart2.setPieValuesColor('#603311');
+	myChart2.setTitle(pjname +' Task Summary');
+	myChart2.setSize(250,250);
+	myChart2.draw();
+
+
+
+
+// end charting
+
+	var bspan = document.getElementById("buttons");
+	bspan.innerHTML += "<button class='cbut' onclick='filterrisk();'> View Risk (" + NRisk + ")</button>";
+	bspan.innerHTML += "<button class='cbut' onclick='filterupcoming();'> "+Aheadweek +" weeks Upcoming (" + NUpcoming + ")</button>";
+	bspan.innerHTML += "<button class='cbut' onclick='filterBehind();'> View Behind (" + NBehind + ")</button>";
+	bspan.innerHTML += "<button class='cbut' onclick='filterLate();'> View Late (" + NLate + ")</button>";
+	bspan.innerHTML += "<button class='cbut' onclick='filterOnprogress();'> View On Progress (" + NOnprogress + ")</button>";
+	bspan.innerHTML += "<button class='cbut' onclick='filterCompleted();'> View Completed (" + NComplete +")</button>";
+	bspan.innerHTML += "<button class='cbut' onclick='filtermilestone();'> View Milestone </button>";
+	bspan.innerHTML += "<button class='cbut' onclick='filterissued();'> View Issued </button>";
+
+	//	provide external model as a grid data source
+	obj.setCellText(gData);
+	obj.setRowCount(datacount);
+	obj.refresh();
+	
+	Rowcoloring();
+	//Cancel sort
+	obj.onHeaderClicked = function(){ 
+	return true; // cancel event 
+	} 
+	
+	// Default Filter Call
+	filterrisk();
+
+	scr_for_view(true);
+	
+
+
+	// Finish	
+	
+	});
+	gantt.load("./data/"+pXML+"?v="+Math.random(), "xml");
+
+
+	function projData(){
+	var startTask;
+	var ResPerson, Predecess, AssStat, IsHeadTask;
+	var baseComp , PerComp, hcount=1 ;
+	
+	gantt.eachTask(function(task){
+		ResPerson = "";
+		Predecess = task.$source[0];
+
+	
+	//	Select first level
+		if(task.parent == 0) {
+
+		L1BaseComp = 0;
+		if (Date.parse(today) > Date.parse(task.start_date)) {
+			L1BaseComp = (Date.parse(today) - Date.parse(task.start_date))/(Date.parse(task.end_date)-Date.parse(task.start_date))*100;
+			if (L1BaseComp > 100) {
+				L1BaseComp = 100
+				}
+			L1BaseComp = Math.round(L1BaseComp);
+			}
+		L1Data.push(["A"+hcount,task.progress * 100]);
+		colors.push('#D9EDF7');
+
+		L1Data.push(["B"+hcount,L1BaseComp]);
+		if (L1BaseComp > task.progress) { colors.push('#FF0000');}
+		else { colors.push('#FF00FF');}
+
+		L1BoxText += "<font size='2' face='Tahoma'>"+ hcount + " : "+ task.text +"</font><br>";
+		hcount=hcount+1;
+		}
+   
+		//	Assign status
+		IsHeadTask = 1;
+		AssStat = "";
+		BaseComp = 0;
+		if(task.parent == 0) {
+				if (Date.parse(today) > Date.parse(task.start_date)) {
+				BaseComp = (Date.parse(today) - Date.parse(task.start_date))/(Date.parse(task.end_date)-Date.parse(task.start_date))*100;
+				BaseComp = Math.round(BaseComp);
+			}
+		
+		}
+
+
+		if(!((task.parent) == 0) ) 
+		{ 
+			IsHeadTask = 0;
+			NTask = NTask + 1;
+
+			if ((Date.parse(today) < Date.parse(task.start_date)) && ((Date.parse(task.start_date)-Date.parse(today)) < Aheadweek*7*24*60*60*1000))
+			{
+				AssStat = "Upcoming";
+				NUpcoming = NUpcoming + 1;
+				BaseComp = 0;
+			}
+
+			if ((Date.parse(today) > Date.parse(task.start_date)) && (Date.parse(today) < Date.parse(task.end_date)))
+			{
+				AssStat = "Onprogress";
+				BaseComp = (Date.parse(today) - Date.parse(task.start_date))/(Date.parse(task.end_date)-Date.parse(task.start_date))*100;
+				if ( task.progress * 100 < BaseComp ){ AssStat = "Behind"; }
+				if ( task.progress * 100 < 1 ){ AssStat = "Late";  NLate = NLate + 1; }
+				if (AssStat == "Behind") {NBehind = NBehind +1;}	
+				if (AssStat == "Onprogress") { NOnprogress = NOnprogress + 1;}
+
+			}
+
+			if (Date.parse(today) >= Date.parse(task.end_date))
+			{
+				AssStat = "Completed";
+				
+				BaseComp = 100;
+				if ( task.progress* 100 < 100 ){ AssStat = "Behind";  }
+				if ( task.progress*100 < Risk2Comp ){ AssStat = "Risk"; NRisk = NRisk + 1;   }
+				if (AssStat == "Behind") {NBehind = NBehind +1;}								
+				if (AssStat == "Completed") {NComplete = NComplete + 1;}		
+
+			}
+
+
+		}
+
+			var mstart = task.start_date;
+			var fmstart = mstart.getDate() + "/" + (mstart.getMonth()+1) + "/" + mstart.getFullYear();
+			var mfinish = task.end_date;
+			var fmfinish = mfinish.getDate() + "/" + (mfinish.getMonth()+1) + "/" + mfinish.getFullYear();
+
+			BaseComp = Math.round(BaseComp);
+			gData.push([ task.id, task.text,fmstart,fmfinish,Math.round(task.progress * 100), task.parent,Predecess,BaseComp,AssStat,IsHeadTask,task.duration]);
+			datacount = datacount + 1;
+	});	
+
+	}
+	
+		
+	
+	// row coloring
+
+	function Rowcoloring(){
+		var ix =0, max = datacount;
+		for (ix=0; ix<max; ix++){
+			//obj.setCellTemplate(new AW.Templates.Image, 11,ix);
+			//obj.setCellImage(obj.getCellValue(14, ix),11,ix);
+			//if  (obj.getCellValue(6, ix) == '4') {
+			//obj.setCellImage("Milestone",11,ix);	
+			//}
+
+
+			if ( obj.getCellValue(9, ix) == '1' ){
+			obj.getRowTemplate(ix).setStyle("background","#999999");
+			}
+		}
+	}
+
+
+
+	function filterrisk(){
+		var max = datacount;
+		var max2 = max; 
+  	 	obj.setRowCount(max2);  
+  	 	obj.setRowIndices(''); 	
+		
+		var i, rows = [],max = obj.getRowCount() , Mhead;
+		for (i=0; i<max; i++){
+			if (obj.getCellValue(9, i) == '1'  ) {
+				Mhead = i;
+				continue;
+			}
+			if  (obj.getCellValue(8, i) == 'Risk') {
+				if (Mhead) { 	rows.push(Mhead);
+						Mhead = '';
+						}
+				rows.push(i);
+
+			}
+
+
+
+		}
+
+		obj.setRowCount(rows.length);
+		obj.setRowIndices(rows);
+		Rowcoloring();
+
+		var objDiv = document.getElementById('view');
+		objDiv.innerHTML = "View Risk Tasks";
+
+	}
+function filterupcoming(){
+		var max = datacount;
+		var max2 = max; 
+  	 	obj.setRowCount(max2);  
+  	 	obj.setRowIndices(''); 	
+		
+		var i, rows = [],max = obj.getRowCount() , Mhead;
+		for (i=0; i<max; i++){
+			if (obj.getCellValue(9, i) == '1'  ) {
+				Mhead = i;
+				continue;
+			}
+			if  (obj.getCellValue(8, i) == 'Upcoming') {
+				if (Mhead) { 	rows.push(Mhead);
+						Mhead = '';
+						}
+				rows.push(i);
+
+			}
+
+
+
+		}
+
+		obj.setRowCount(rows.length);
+		obj.setRowIndices(rows);
+		Rowcoloring();
+
+		var objDiv = document.getElementById('view');
+		objDiv.innerHTML = "View Upcoming Tasks";
+	}
+
+	function filterBehind(){
+		var max = datacount;
+		var max2 = max; 
+  	 	obj.setRowCount(max2);  
+  	 	obj.setRowIndices(''); 	
+		
+		var i, rows = [],max = obj.getRowCount() , Mhead;
+		for (i=0; i<max; i++){
+			if (obj.getCellValue(9, i) == '1'  ) {
+				Mhead = i;
+				continue;
+			}
+			if  (obj.getCellValue(8, i) == 'Behind') {
+				if (Mhead) { 	rows.push(Mhead);
+						Mhead = '';
+						}
+				rows.push(i);
+
+			}
+
+
+
+		}
+
+		obj.setRowCount(rows.length);
+		obj.setRowIndices(rows);
+		Rowcoloring();
+
+		var objDiv = document.getElementById('view');
+		objDiv.innerHTML = "View Behind Tasks";
+	}
+	function filterLate(){
+		var max = datacount;
+		var max2 = max; 
+  	 	obj.setRowCount(max2);  
+  	 	obj.setRowIndices(''); 	
+		
+		var i, rows = [],max = obj.getRowCount() , Mhead;
+		for (i=0; i<max; i++){
+			if (obj.getCellValue(9, i) == '1'  ) {
+				Mhead = i;
+				continue;
+			}
+			if  (obj.getCellValue(8, i) == 'Late') {
+				if (Mhead) { 	rows.push(Mhead);
+						Mhead = '';
+						}
+				rows.push(i);
+
+			}
+
+
+
+		}
+
+		obj.setRowCount(rows.length);
+		obj.setRowIndices(rows);
+		Rowcoloring();
+
+		var objDiv = document.getElementById('view');
+		objDiv.innerHTML = "View Late Tasks";
+	}
+
+	function filterOnprogress(){
+		var max = datacount;
+		var max2 = max; 
+  	 	obj.setRowCount(max2);  
+  	 	obj.setRowIndices(''); 	
+		
+		var i, rows = [],max = obj.getRowCount() , Mhead;
+		for (i=0; i<max; i++){
+			if (obj.getCellValue(9, i) == '1'  ) {
+				Mhead = i;
+				continue;
+			}
+			if  (obj.getCellValue(8, i) == 'Onprogress') {
+				if (Mhead) { 	rows.push(Mhead);
+						Mhead = '';
+						}
+				rows.push(i);
+
+			}
+
+
+
+		}
+
+		obj.setRowCount(rows.length);
+		obj.setRowIndices(rows);
+		Rowcoloring();
+
+		var objDiv = document.getElementById('view');
+		objDiv.innerHTML = "View On Progress Tasks";
+	}
+
+	function filterCompleted(){
+		var max = datacount;
+		var max2 = max; 
+  	 	obj.setRowCount(max2);  
+  	 	obj.setRowIndices(''); 	
+		
+		var i, rows = [],max = obj.getRowCount() , Mhead;
+		for (i=0; i<max; i++){
+			if (obj.getCellValue(9, i) == '1'  ) {
+				Mhead = i;
+				continue;
+			}
+			if  (obj.getCellValue(8, i) == 'Completed') {
+				if (Mhead) { 	rows.push(Mhead);
+						Mhead = '';
+						}
+				rows.push(i);
+
+			}
+
+
+
+		}
+
+		obj.setRowCount(rows.length);
+		obj.setRowIndices(rows);
+		Rowcoloring();
+
+		var objDiv = document.getElementById('view');
+		objDiv.innerHTML = "View Completed Tasks";
+	}
+
+	function filterissued(){
+		var max = datacount;
+		var max2 = max; 
+  	 	obj.setRowCount(max2);  
+  	 	obj.setRowIndices(''); 	
+
+		var i, rows = [],max = obj.getRowCount() , Mhead;
+		for (i=0; i<max; i++){
+			if (obj.getCellValue(9, i) == '1'  ) {
+				Mhead = i;
+				continue;
+			}
+			if  (obj.getCellValue(1, i).indexOf("!") !== -1) {
+				if (Mhead) { 	rows.push(Mhead);
+						Mhead = '';
+						}
+				rows.push(i);
+
+			}
+
+
+		}
+
+
+		obj.setRowCount(rows.length);
+		obj.setRowIndices(rows);
+		Rowcoloring();
+
+		var objDiv = document.getElementById('view');
+		objDiv.innerHTML = "View Noted Tasks";
+	}
+
+	function filtermilestone(){
+		var max = datacount;
+		var max2 = max; 
+  	 	obj.setRowCount(max2);  
+  	 	obj.setRowIndices(''); 	
+
+
+		var i, rows = [],max = obj.getRowCount() , Mhead;
+		for (i=0; i<max; i++){
+			if (obj.getCellValue(9, i) == '1'  ) {
+				Mhead = i;
+				continue;
+			}
+			if  (obj.getCellValue(10, i) == '0') {
+				if (Mhead) { 	rows.push(Mhead);
+						Mhead = '';
+						}
+				rows.push(i);
+
+			}
+
+
+
+		}
+
+
+		obj.setRowCount(rows.length);
+		obj.setRowIndices(rows);
+		Rowcoloring();
+
+		var objDiv = document.getElementById('view');
+		objDiv.innerHTML = "View Milestone Tasks";
+	}
+
+
+
+	
+
+	
+
+
+
+//detect screen
+		function scr_for_view(setting) {
+		if (setting) {
+		obj.setStyle('height', '40%'); 
+		}
+		else {
+			obj.setStyle('height', '100%'); 
+		}
+		}
+
+		
+
+
+
+
+	</script>
+
+</body>
+</html>
