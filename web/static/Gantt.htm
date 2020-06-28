@@ -223,11 +223,24 @@ document.write('<H1>' + pjname +' Project Gantt View <a href = "Dashboard.htm?pX
 });
 
 	function save(){
-	var request = new XMLHttpRequest();
-	request.open('POST', 'savexml.php?xmlname='+pXML, true);
-	request.setRequestHeader('Content-Type', 'application/xml; charset=UTF-8');
-	request.send(gantt.serialize("xml"));
-	
+		//var request = new XMLHttpRequest();
+	//request.open('POST', 'savexml.php?xmlname='+pXML, true);
+	//request.setRequestHeader('Content-Type', 'application/xml; charset=UTF-8');
+	//request.send(gantt.serialize("xml"));
+	//Creating an XMLHttpRequest and sending
+	var blob = new Blob([gantt.serialize("xml")], { type: 'text/plain' });
+	var savefile = new File([blob], pXML, {type: "text/plain"});
+	var formdata = new FormData();
+	formdata.append('file', savefile);
+    var xhr = new XMLHttpRequest();
+    var url = encodeURI('./upload');
+    xhr.open('POST', url);
+    xhr.send(formdata);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            alert("save successful");
+        }
+    }
 	}
 	</script>
 </body>
