@@ -1,0 +1,18 @@
+<meta http-equiv=”Pragma” content=”no-cache”>
+<meta http-equiv=”Expires” content=”-1″>
+<meta http-equiv=”CACHE-CONTROL” content=”NO-CACHE”>
+<html>
+  <head>
+  </head>
+  <body>
+    <script type = "text/javascript">
+	document.write("<FRAMESET COLS='20%,*'>");
+	 {%- for item in file_names %}
+		  document.write("<IFRAME src='./iframe.htm?pXML=" + '{{ item }}'.replace("./data/", "") +"&pjname=" + '{{ item }}'.replace("./data/", "").replace(".xml", "") +"'onload='this.style.height=this.contentDocument.body.scrollHeight;'scrolling='no' frameborder='0'></IFRAME>");
+	{%- endfor %}
+		document.write("</FRAMESET>");
+		document.write("<br><a  href='New.html' target='_blank'>+ Add New Project</a>");
+    </script>
+  </body>
+</html>
+
